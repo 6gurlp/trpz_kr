@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Міні CI сервер</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            padding: 0;
+            background: #f8f9fa;
+            color: #1e293b;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        }
+
+        .container {
+            max-width: 1400px;
+            padding: 2rem 1rem;
+        }
+
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        section {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+        }
+
+        section.mb-5 {
+            margin-bottom: 1.5rem !important;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            padding: 0.75rem;
+            font-size: 0.875rem;
+            color: #334155;
+        }
+
+        /* Покращені стилі для форми */
+        .form-label {
+            font-weight: 500;
+            color: #475569;
+            font-size: 0.875rem;
+            margin-bottom: 0.375rem;
+        }
+
+        .form-control, .form-select {
+            border: 1px solid #cbd5e1;
+            font-size: 0.9375rem;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        /* Строгі кнопки з кращими кольорами */
+        .btn {
+            font-weight: 500;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            padding: 0.5rem 1rem;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            border-color: #2563eb;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+            border-color: #1d4ed8;
+        }
+
+        .btn-outline-secondary {
+            color: #64748b;
+            border-color: #cbd5e1;
+        }
+
+        .btn-outline-secondary:hover {
+            background: #f1f5f9;
+            border-color: #94a3b8;
+            color: #475569;
+        }
+
+        /* Покращена таблиця */
+        .table {
+            font-size: 0.9375rem;
+        }
+
+        .table thead th {
+            background: #f8fafc;
+            color: #475569;
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+            border-bottom: 2px solid #e2e8f0;
+            padding: 0.75rem;
+        }
+
+        .table tbody td {
+            padding: 0.875rem 0.75rem;
+            vertical-align: middle;
+            color: #334155;
+        }
+
+        .table-striped tbody tr:nth-of-type(odd) {
+            background-color: #f8fafc;
+        }
+
+        .table tbody tr:hover {
+            background-color: #f1f5f9;
+        }
+
+        .table a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+
+        .table a:hover {
+            text-decoration: underline;
+        }
+
+        .pipeline-steps {
+            counter-reset: step;
+            list-style: none;
+            padding-left: 0.75rem;
+            margin-bottom: 0;
+        }
+
+        .pipeline-steps li {
+            counter-increment: step;
+            position: relative;
+            padding-left: 1.5rem;
+            margin-bottom: 0.35rem;
+        }
+
+        .pipeline-steps li::before {
+            content: counter(step) '.';
+            position: absolute;
+            left: 0;
+            top: 0.15rem;
+            font-size: 0.75rem;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        /* Покращені стилі стадій pipeline з більш строгим виглядом */
+        .stage-timeline {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+            padding: 1rem;
+            background: #f8fafc;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+        .stage-node { display: flex; align-items: center; gap: 0.375rem; }
+        .stage-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: none;
+            background: transparent;
+            padding: 0.375rem 0.75rem;
+            margin: 0;
+            text-decoration: none;
+            color: inherit;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: background 0.15s;
+        }
+
+        .stage-chip:hover {
+            background: rgba(0, 0, 0, 0.03);
+        }
+
+        .stage-chip:focus-visible {
+            outline: 2px solid #2563eb;
+            outline-offset: 2px;
+            border-radius: 6px;
+        }
+
+        .stage-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: #fff;
+        }
+
+        .stage-icon.pending { background: #94a3b8; }
+        .stage-icon.running { background: #2563eb; animation: pulse 1.5s infinite alternate; }
+        .stage-icon.success { background: #059669; }
+        .stage-icon.failed { background: #dc2626; }
+
+        .stage-connector {
+            flex: 0 0 16px;
+            height: 2px;
+            background: #cbd5e1;
+            border-radius: 1px;
+            margin: 0;
+        }
+
+        .stage-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #475569;
+        }
+
+        @keyframes pulse {
+            from { opacity: 0.7; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* Покращені акордеони */
+        .accordion-item {
+            border: 1px solid #e2e8f0;
+            margin-bottom: 0.5rem;
+        }
+
+        .accordion-item:first-of-type,
+        .accordion-item:last-of-type {
+            border-radius: 6px;
+        }
+
+        .accordion-button {
+            font-size: 0.9375rem;
+            font-weight: 500;
+            color: #334155;
+            background: #fff;
+            padding: 1rem 1.25rem;
+        }
+
+        .accordion-button:not(.collapsed) {
+            background: #f8fafc;
+            color: #0f172a;
+            box-shadow: none;
+        }
+
+        .accordion-button:focus {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            border-color: #2563eb;
+        }
+
+        .accordion-body {
+            padding: 1.25rem;
+            background: #fafbfc;
+        }
+
+        /* Покращені badges */
+        .badge {
+            font-weight: 500;
+            font-size: 0.75rem;
+            padding: 0.25rem 0.625rem;
+            border-radius: 4px;
+            letter-spacing: 0.025em;
+        }
+
+        .badge.bg-success { background: #059669 !important; }
+        .badge.bg-danger { background: #dc2626 !important; }
+        .badge.bg-primary { background: #2563eb !important; }
+        .badge.bg-secondary { background: #64748b !important; }
+
+        /* Покращені картки */
+        .card {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 1rem;
+        }
+
+        /* Покращені повідомлення */
+        .alert {
+            border-radius: 6px;
+            border: 1px solid;
+            font-size: 0.9375rem;
+        }
+
+        .alert-danger {
+            background: #fef2f2;
+            border-color: #fecaca;
+            color: #991b1b;
+        }
+
+        .text-muted {
+            color: #64748b !important;
+        }
+
+        .text-success {
+            color: #059669 !important;
+        }
+
+        .text-danger {
+            color: #dc2626 !important;
+        }
+
+        /* Responsive improvements */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            section {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Міні CI сервер</h1>
+
+    <section class="mb-5">
+        <h2 class="h4">Новий пайплайн</h2>
+        <form id="pipeline-form" class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label" for="name">Назва</label>
+                <input class="form-control" id="name" name="name" placeholder="My Project" required>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="repo">Git репозиторій</label>
+                <input class="form-control" id="repo" name="repositoryUrl" placeholder="https://github.com/user/repo.git" required>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="branch">Гілка</label>
+                <input class="form-control" id="branch" name="branch" value="main">
+            </div>
+            <div class="col-12">
+                <label class="form-label" for="script">Скрипт (по одному кроку на рядок)</label>
+                <textarea class="form-control" id="script" name="script" rows="5" placeholder="mvn test" required></textarea>
+            </div>
+            <div class="col-12">
+                <button class="btn btn-primary" type="submit">Зберегти пайплайн</button>
+                <span id="form-status" class="ms-3"></span>
+            </div>
+        </form>
+    </section>
+
+    <section class="mb-5">
+        <div class="d-flex align-items-center mb-3">
+            <h2 class="h4 me-3 mb-0">Пайплайни</h2>
+            <button id="refresh" class="btn btn-outline-secondary btn-sm">Оновити</button>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-striped align-middle" id="pipelines-table">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Назва</th>
+                    <th>Репозиторій</th>
+                    <th>Гілка</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </section>
+
+    <section>
+        <h2 class="h4">Запуски</h2>
+        <div id="runs"></div>
+    </section>
+</div>
+
+<script>
+    const tableBody = document.querySelector('#pipelines-table tbody');
+    const refreshButton = document.getElementById('refresh');
+    const form = document.getElementById('pipeline-form');
+    const formStatus = document.getElementById('form-status');
+    const runsContainer = document.getElementById('runs');
+    let autoRefreshId = null;
+    let openedPipelineId = null;
+    const openedRunsByPipeline = new Map();
+    const openedStagesByRun = new Map();
+
+    function escapeHtml(value) {
+        if (!value) {
+            return '';
+        }
+        return value
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    async function api(url, options = {}) {
+        const response = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...options });
+        if (!response.ok) {
+            const message = await response.text();
+            throw new Error(message || 'Помилка сервера');
+        }
+        return response.json();
+    }
+
+    function renderStageTimeline(runId, stageResults) {
+        if (!stageResults || stageResults.length === 0) {
+            return '<span class="text-muted">Стадії ще не ініціалізовано</span>';
+        }
+
+        const statusIcon = (status) => {
+            switch (status) {
+                case 'SUCCESS':
+                    return { icon: '✓', cls: 'success' };
+                case 'FAILED':
+                    return { icon: '✕', cls: 'failed' };
+                case 'RUNNING':
+                    return { icon: '»', cls: 'running' };
+                default:
+                    return { icon: '…', cls: 'pending' };
+            }
+        };
+
+        return `<div class="stage-timeline">${stageResults.map((stage, idx) => {
+            const meta = statusIcon(stage.status);
+            const connector = idx < stageResults.length - 1 ? '<div class="stage-connector"></div>' : '';
+            const targetId = `stage-${runId}-${idx}`;
+            return `<div class="stage-node">` +
+                `<button class="stage-chip" type="button" data-bs-toggle="collapse" data-bs-target="#${targetId}" aria-controls="${targetId}" aria-expanded="false">` +
+                `<span class="stage-icon ${meta.cls}" aria-label="${stage.status}">${meta.icon}</span>` +
+                `<span class="stage-label">${stage.name}</span>` +
+                `</button>` +
+                `</div>${connector}`;
+        }).join('')}</div>`;
+    }
+
+    function renderStageLogs(runId, stageResults) {
+        if (!stageResults || stageResults.length === 0) {
+            return '';
+        }
+        const openedStages = openedStagesByRun.get(runId) || new Set();
+        return `<div class="accordion" id="stage-logs-${runId}">${stageResults.map((stage, idx) => {
+            const collapseId = `stage-${runId}-${idx}`;
+            const headingId = `heading-${collapseId}`;
+            const badgeClass = stage.status === 'SUCCESS' ? 'success' : stage.status === 'FAILED' ? 'danger' : stage.status === 'RUNNING' ? 'primary' : 'secondary';
+            const isOpened = openedStages.has(idx);
+            return `
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="${headingId}">
+                        <button class="accordion-button ${isOpened ? '' : 'collapsed'}" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}" aria-expanded="${isOpened}" aria-controls="${collapseId}">
+                            <div class="d-flex flex-column flex-sm-row w-100 justify-content-between align-items-sm-center gap-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <strong>${stage.name}</strong>
+                                    <span class="badge bg-${badgeClass}">${stage.status}</span>
+                                </div>
+                                <small class="text-muted">Натисніть, щоб переглянути лог</small>
+                            </div>
+                        </button>
+                    </h2>
+                    <div id="${collapseId}" class="accordion-collapse collapse${isOpened ? ' show' : ''}" aria-labelledby="${headingId}" data-bs-parent="#stage-logs-${runId}">
+                        <div class="accordion-body">
+                            ${stage.logOutput ? `<pre class="mb-0">${stage.logOutput}</pre>` : '<small class="text-muted">Логів поки немає</small>'}
+                        </div>
+                    </div>
+                </div>`;
+        }).join('')}</div>`;
+    }
+
+    function renderRuns(pipeline) {
+        const openedRuns = openedRunsByPipeline.get(pipeline.id) || new Set();
+        if (!pipeline.runs || pipeline.runs.length === 0) {
+            return '<p class="text-muted">Поки що запусків не було.</p>';
+        }
+        return `<div class="accordion" id="runs-${pipeline.id}">${pipeline.runs.map(run => {
+            const hasStageLogs = run.stageResults && run.stageResults.length > 0;
+            return `
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="heading-${run.id}">
+                    <button class="accordion-button ${openedRuns.has(run.id) ? '' : 'collapsed'} d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2" type="button" data-bs-toggle="collapse" data-bs-target="#run-${run.id}" aria-expanded="${openedRuns.has(run.id)}" aria-controls="run-${run.id}">
+                        <div class="d-flex align-items-center gap-2">
+                            <strong>Run #${run.id}</strong>
+                            <span class="badge bg-${run.status === 'SUCCESS' ? 'success' : run.status === 'RUNNING' ? 'primary' : 'danger'}">${run.status}</span>
+                        </div>
+                        <small class="text-muted">Черга: ${run.queuedAt || '-'} • Старт: ${run.startedAt || '-'} • Фініш: ${run.finishedAt || '-'}</small>
+                    </button>
+                </h2>
+                <div id="run-${run.id}" data-run-id="${run.id}" class="accordion-collapse collapse ${openedRuns.has(run.id) ? 'show' : ''}" aria-labelledby="heading-${run.id}" data-bs-parent="#runs-${pipeline.id}">
+                        <div class="accordion-body">
+                        <div class="mb-3">${renderStageTimeline(run.id, run.stageResults)}</div>
+                        ${hasStageLogs ? `<div class="mt-2">${renderStageLogs(run.id, run.stageResults)}</div>` : ''}
+                        ${!hasStageLogs && run.logOutput ? `<pre class="mt-3 mb-0">${run.logOutput}</pre>` : ''}
+                    </div>
+                </div>
+            </div>`;
+        }).join('')}</div>`;
+    }
+
+    function renderPipelineScript(pipeline) {
+        const steps = pipeline.script
+            ?.split(/\r?\n/)
+            .map(line => line.trim())
+            .filter(Boolean);
+
+        if (!steps || steps.length === 0) {
+            return '<p class="text-muted">Кроки не задано.</p>';
+        }
+
+        return `<ol class="pipeline-steps">${steps.map(step => `
+            <li><code>${escapeHtml(step)}</code></li>
+        `).join('')}</ol>`;
+    }
+
+    function renderPipeline(pipeline) {
+        return `
+            <tr data-id="${pipeline.id}">
+                <td>${pipeline.id}</td>
+                <td>${pipeline.name}</td>
+                <td><a href="${pipeline.repositoryUrl}" target="_blank" rel="noreferrer">${pipeline.repositoryUrl}</a></td>
+                <td>${pipeline.branch}</td>
+                <td>
+                    <button class="btn btn-sm btn-primary" data-run="${pipeline.id}">Запустити</button>
+                    <button class="btn btn-sm btn-outline-secondary" data-open="${pipeline.id}">Показати</button>
+                </td>
+            </tr>`;
+    }
+
+    async function loadPipelines() {
+        tableBody.innerHTML = '<tr><td colspan="5">Завантаження...</td></tr>';
+        try {
+            const pipelines = await api('/api/pipelines');
+            if (pipelines.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5" class="text-muted">Поки що немає пайплайнів</td></tr>';
+                return;
+            }
+            tableBody.innerHTML = pipelines.map(renderPipeline).join('');
+        } catch (err) {
+            tableBody.innerHTML = `<tr><td colspan="5" class="text-danger">${err.message}</td></tr>`;
+        }
+    }
+
+    function bindRunAccordionState(pipelineId) {
+        const openedRuns = openedRunsByPipeline.get(pipelineId) || new Set();
+        const accordion = runsContainer.querySelector(`#runs-${pipelineId}`);
+        if (!accordion) {
+            return;
+        }
+        accordion.querySelectorAll('.accordion-collapse').forEach(el => {
+            const runId = el.dataset.runId;
+            el.addEventListener('shown.bs.collapse', () => {
+                openedRuns.add(Number(runId));
+                openedRunsByPipeline.set(pipelineId, new Set(openedRuns));
+            });
+            el.addEventListener('hidden.bs.collapse', () => {
+                openedRuns.delete(Number(runId));
+                openedRunsByPipeline.set(pipelineId, new Set(openedRuns));
+            });
+        });
+    }
+
+    function bindStageAccordionState(pipeline) {
+        pipeline.runs?.forEach(run => {
+            const openedStages = openedStagesByRun.get(run.id) || new Set();
+            const accordion = runsContainer.querySelector(`#stage-logs-${run.id}`);
+            if (!accordion) {
+                return;
+            }
+            accordion.querySelectorAll('.accordion-collapse').forEach((el, idx) => {
+                el.addEventListener('shown.bs.collapse', () => {
+                    openedStages.add(idx);
+                    openedStagesByRun.set(run.id, new Set(openedStages));
+                });
+                el.addEventListener('hidden.bs.collapse', () => {
+                    openedStages.delete(idx);
+                    openedStagesByRun.set(run.id, new Set(openedStages));
+                });
+            });
+        });
+    }
+
+    async function showPipeline(id, silent = false) {
+        openedPipelineId = id;
+        if (!silent) {
+            runsContainer.innerHTML = '<p>Завантаження запусків...</p>';
+        }
+        try {
+            const pipeline = await api(`/api/pipelines/${id}`);
+            runsContainer.innerHTML = `
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">${pipeline.name} (ID: ${pipeline.id})</h5>
+                        <p class="mb-1"><strong>Репозиторій:</strong> ${pipeline.repositoryUrl}</p>
+                        <p class="mb-1"><strong>Гілка:</strong> ${pipeline.branch}</p>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                <strong>Деталі пайплайна</strong>
+                                <small class="text-muted">Створено: ${pipeline.createdAt || '—'}</small>
+                            </div>
+                            <div class="mt-2">${renderPipelineScript(pipeline)}</div>
+                        </div>
+                        <div class="mt-3">
+                            <strong>Запуски</strong>
+                            ${renderRuns(pipeline)}
+                        </div>
+                    </div>
+                </div>`;
+            bindRunAccordionState(pipeline.id);
+            bindStageAccordionState(pipeline);
+        } catch (err) {
+            runsContainer.innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
+        }
+    }
+
+    function enableAutoRefresh(id) {
+        openedPipelineId = id;
+        if (autoRefreshId) {
+            clearInterval(autoRefreshId);
+        }
+        autoRefreshId = setInterval(() => {
+            if (openedPipelineId) {
+                showPipeline(openedPipelineId, true);
+            }
+        }, 4000);
+    }
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        formStatus.textContent = 'Збереження...';
+        const payload = {
+            name: form.name.value,
+            repositoryUrl: form.repositoryUrl.value,
+            branch: form.branch.value,
+            script: form.script.value
+        };
+        try {
+            await api('/api/pipelines', { method: 'POST', body: JSON.stringify(payload) });
+            formStatus.innerHTML = '<span class="text-success">Збережено</span>';
+            form.reset();
+            form.branch.value = 'main';
+            await loadPipelines();
+        } catch (err) {
+            formStatus.innerHTML = `<span class="text-danger">${err.message}</span>`;
+        }
+    });
+
+    refreshButton.addEventListener('click', loadPipelines);
+
+    tableBody.addEventListener('click', async (e) => {
+        const runBtn = e.target.closest('button[data-run]');
+        const openBtn = e.target.closest('button[data-open]');
+        if (runBtn) {
+            const id = runBtn.dataset.run;
+            runBtn.disabled = true;
+            runBtn.textContent = '...';
+            try {
+                await api(`/api/pipelines/${id}/runs`, { method: 'POST' });
+                await showPipeline(id);
+                enableAutoRefresh(id);
+            } catch (err) {
+                alert(err.message);
+            } finally {
+                runBtn.disabled = false;
+                runBtn.textContent = 'Запустити';
+            }
+        }
+        if (openBtn) {
+            const id = openBtn.dataset.open;
+            await showPipeline(id);
+            enableAutoRefresh(id);
+        }
+    });
+
+    loadPipelines();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
