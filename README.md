@@ -1,14 +1,41 @@
-# Jenkins Tool
+# CI Server (course project)
 
-A Spring Boot application for working with a database-backed service.
+Простий Spring Boot застосунок, що надає базовий функціонал CI-сервера з веб-UI:
+- створення пайплайнів з Git-репозиторієм, гілкою та YAML-визначенням стадій;
+- запуск пайплайна (клонує репозиторій, виконує послідовні стадії shell-команд, збирає лог і візуалізує послідовність);
+- перегляд історії запусків і логів у браузері.
 
-## Quick start
-1. Create the database and user credentials the service should use.
-2. Update `src/main/resources/application.yml` with the connection details (either replace the `${...}` placeholders or export the corresponding environment variables `DB_HOST`, `DB_NAME`, `DB_USER`, and `DB_PASSWORD`).
-3. Build and run the app:
-   - `./mvnw clean package`
-   - `./mvnw spring-boot:run`
 
-Ensure Java 17+ is available before running the commands.
 
-4. After startup, open http://localhost:8080 in your browser to verify the service is running.
+## Обмеження платформи
+
+⚠️ Застосунок працює **лише в Linux-середовищі**  
+(у тому числі **WSL — Windows Subsystem for Linux**).
+
+## Швидкий старт
+1. Встановіть Java 17+ і git.
+2. Запустіть застосунок:
+   ```bash
+   ./mvnw spring-boot:run
+   ```
+3. Відкрийте http://localhost:8080 — у браузері доступний UI для керування пайплайнами.
+
+### Робота з пайплайнами
+- Заповніть форму «Новий пайплайн»: назва, URL репозиторію, гілка (за замовчуванням `main`), YAML-опис стадій. Наприклад:
+  ```yaml
+  stages:
+    - name: compile
+      run: make compile
+    - name: test
+      run: make test
+  ```
+- Натисніть «Зберегти пайплайн» — його буде створено в базі (H2 in-memory за замовчуванням).
+- У таблиці натискайте «Запустити», щоб створити новий прогін. Після завершення лог буде доступний у блоці «Запуски».
+
+### Використані патерни
+- **Command**: кожен крок пайплайна (клонирование репозиторію, виконання скрипту) інкапсульовано в команді (`pipeline.execution.command`).
+- **Visitor**: `CommandPlanVisitor` проходить по списку команд та формує читабельний план виконання, який додається до логу.
+- **State**: `PipelineRunStateMachine` відповідає за переходи станів прогона (QUEUE → RUNNING → SUCCESS/FAILED) і виставляє часові мітки.
+
+### Налаштування бази
+За замовчуванням використовується H2 in-memory (див. `src/main/resources/application.yml`). За потреби змініть параметри `spring.datasource.*` на MySQL/PostgreSQL та оновіть `ddl-auto`.
